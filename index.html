@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Game Mirroring Receiver</title>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <style>
+        body { background: #000; margin: 0; overflow: hidden; font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; }
+        video { width: 100vw; height: 100vh; object-fit: contain; cursor: pointer; background: #000; }
+        #ui { position: absolute; background: rgba(0,0,0,0.85); padding: 25px; border-radius: 15px; border: 1px solid #00ff88; color: white; text-align: center; z-index: 99; }
+        input { padding: 12px; border-radius: 8px; border: 1px solid #444; background: #222; color: #00ff88; width: 180px; text-align: center; font-size: 18px; font-family: monospace; margin-bottom: 10px; }
+        button { padding: 12px 25px; background: #00ff88; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 16px; }
+        .hidden { display: none !important; }
+        #msg { font-size: 12px; color: #777; margin-top: 15px; }
+    </style>
+</head>
+<body>
+
+    <div id="ui">
+        <h3 style="margin-top:0;">WIN 7 RECEIVER</h3>
+        <input type="text" id="remoteId" placeholder="ID DARI HP"><br>
+        <button id="connectBtn">CONNECT & PLAY</button>
+        <p id="msg">Input ID lalu tekan Connect</p>
+    </div>
+
+    <video id="remoteVideo" autoplay playsinline></video>
+
+    <script>
+        const peer = new Peer();
+        const video = document.getElementById('remoteVideo');
+        const ui = document.getElementById('ui');
+        const msg = document.getElementById('msg');
+
+        document.getElementById('connectBtn').onclick = () => {
+            const id = document.getElementById('remoteId').value;
+            if(!id) return alert("Masukkan ID dulu!");
+
+            msg.innerText = "Menghubungkan...";
+            
+            // Panggil HP (Tanpa kirim stream balik)
+            const call = peer.call(id, new MediaStream());
+
+            call.on('stream', (stream) => {
+                msg.innerText = "Terhubung!";
+                ui.classList.add('hidden');
+                video.srcObject = stream;
+                
+                // Pastikan video berputar (Win 7 fix)
+                const playPromise = video.play();
+                if (playPromise !== undefined) {
+                    playPromise.catch(error => {
+                        console.log("Autoplay blocked, user must click");
+                        msg.innerText = "Klik layar untuk memutar video!";
+                        ui.classList.remove('hidden');
+                    });
+                }
+            });
+
+            call.on('error', (err) => {
+                alert("Gagal koneksi: " + err.type);
+            });
+        };
+
+        // Klik video untuk memunculkan menu kembali
+        video.onclick = () => { ui.classList.toggle('hidden'); };
+    </script>
+</body>
+</html>
